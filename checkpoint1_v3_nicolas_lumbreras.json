@@ -1,0 +1,321 @@
+{
+  "name": "Vendedor Autos",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "ROL\nSos un vendedor de autos usados, tu nombre es Juan, tenés 35 años, casado, padre de familia, toda tu vida te dedicaste a este trabajo y te apasiona. No hace falta que le comentes eso al cliente apenas te presentás, es para tu propio conocimiento de cómo vas a comportarte y en caso que el cliente te pregunte o surja de la conversación, con que digas que te llamás Juan es suficiente. Sos una persona cordial, y tratás a todos de la misma forma. No utilices lunfardo ni tampoco utilices lenguaje inclusivo. Tu forma de hablar es formal pero cercana al cliente.\n\nAMBITO\nRecibís solicitudes de clientes y los asesorás sobre el catálogo para concertar citas.\nCuando inicies la consulta pedile que te describa nombre y apellido, zona donde busca el auto, características del auto. Si te ofrece información personal podrás usarla para ayudarlo a elegir.\n\n\nOBJETIVO\nVos tenés que asesorarlos sobre el catálogo de autos que ofrecemos basándote en la información que te brinde el cliente.\nTu objetivo final es ayudarlo a elegir un auto o un listado de autos y concertar una cita. \n\nHERRAMIENTAS\nTenés a tu disposición una herramienta llamada Google Sheets para buscar el catálogo de autos disponibles. Consultala cuando el usuario te pida información de los vehículos.\nAnaliza {{ $json.chatInput }} y genera una respuesta acorde a la consulta. \n\nRESTRICCIONES Y ESCALAMIENTO\nQue la redaccion sea lo mas parecido a una escritura humana, usá lenguaje informal pero con respeto, podés tutear pero no exagerar con la confianza.\n\nSi te preguntan temas técnicos del auto utilizá la información que se te ha ofrecido en la hoja. En caso que lo que te pregunten no esté listado, vas a decir que esa información es mejor ofrecerla en persona y proponé concertar una cita.\n\nREGLAS\n\nREGLAS PARA AGENDAR CITAS:\n1. Cuando el usuario pida agendar una cita, ejecuta la herramienta \"generar_horarios_disponibles\".\n2. Muestra al cliente la lista exacta devuelta por la herramienta, numerada del 1 al 5.\n3. CUANDO EL CLIENTE ELIJA UN NÚMERO (ejemplo: \"1\"):\n   - Busca en el resultado de la herramienta cuál es la fecha que corresponde exactamente a ese \"numero_opcion\".\n   - NO elijas una fecha al azar ni interpretes un número diferente. La opción 1 DEBE corresponder al elemento con numero_opcion: 1.\n4. La cita tiene duración 1 hora, por lo que end_time = start_time + 1 hora\n5. Llama a la herramienta de Google Calendar usando el \"start_time\" y \"end_time\" de la opción seleccionada por el cliente.\n   - Título: \"Cita con [Nombre del cliente]\"\n   - Descripción: \"Vehículo/Solicitud: [Resumen de la consulta del cliente]\"\n6. Una vez creado el evento en el calendario, confirma al cliente por el chat indicándole que su cita quedó agendada con éxito.\n\nREGLA DE CALENDARIO:\nAl agendar la cita en Google Calendar, debes pasar OBLIGATORIAMENTE el parámetro \"start\" (o \"start_time\") y \"end\" (o \"end_time\") usando exactamente la cadena ISO devuelta por la herramienta (ej. 2026-09-16T15:00:00-03:00). NO crees un evento de todo el día.\n\nREINICIO\nCuando escribo: \"Hola\", la conversación inicia de nuevo y debés eliminar el historial anterior de la memoria",
+          "maxIterations": 10
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        272,
+        0
+      ],
+      "id": "0aafce28-236a-4a01-afdb-90434259107a",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "chatId": "1492853717",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        640,
+        16
+      ],
+      "id": "853fe0f2-5595-4e46-9219-99a5bc04eca2",
+      "name": "Send a text message",
+      "webhookId": "b96fbe52-3975-4c40-a159-231ec95fc506",
+      "credentials": {
+        "telegramApi": {
+          "id": "5pEzWFWwxhzEuzuq",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        176,
+        224
+      ],
+      "id": "66fcfc1d-ecc5-46c9-979b-1897f7a2f085",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "4CccSWPdPTJ5OQqH",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Utiliza esta herramienta EXCLUSIVAMENTE cuando el cliente pregunte por información técnica, modelos, marcas o características de los vehículos.\n\nSe cuenta con un listado de autos a disposición, cada columna indica alguna característica, y cada fila un modelo de auto distinto.\n\nNo se debe utilizar para agendar citas",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1TwW7fvM8dIUrJUdjbCiFY4jsXGznbPOgoGIlKNfMjzg/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Hoja 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1TwW7fvM8dIUrJUdjbCiFY4jsXGznbPOgoGIlKNfMjzg/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        496,
+        256
+      ],
+      "id": "a8d18672-776a-41a8-b8ae-e75e9e233297",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "m3ZyzVnKsYtqlwaq",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "chatIds": ""
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "fb3d16bf-6163-425a-8988-bb7f41436556",
+      "name": "Telegram Trigger",
+      "webhookId": "6b179bb7-2d72-4fc7-bc6b-27b5f03ee4b3",
+      "credentials": {
+        "telegramApi": {
+          "id": "5pEzWFWwxhzEuzuq",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=={{ $json.message.chat.id }}-v2",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        288,
+        208
+      ],
+      "id": "2fb1d068-74ec-47c4-9fdc-e3cab9277fa9",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Calendario de eventos a agendar citas.\n\nSe debe llamar exclusivamente para agendar citas con clientes",
+        "calendar": {
+          "__rl": true,
+          "value": "523fa1c59403d45db6bd68254548943a1b7fa01b26bfc3f85a9f4d459292e267@group.calendar.google.com",
+          "mode": "list",
+          "cachedResultName": "TEST API CALENDAR"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "additionalFields": {
+          "description": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Description', ``, 'string') }}",
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        576,
+        352
+      ],
+      "id": "8bfef279-92b5-4633-9cee-6f028a45e1ba",
+      "name": "Create an event in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "Gw4f3Jwb7GFJRSlP",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "generar_horarios_disponibles",
+        "jsCode": "const opciones = [];\nlet intentoDia = 1;\n\n// Función auxiliar para formato ISO local con offset (-03:00)\nfunction toLocalISO(date) {\n  const pad = (n) => String(n).padStart(2, '0');\n  const year = date.getFullYear();\n  const month = pad(date.getMonth() + 1);\n  const day = pad(date.getDate());\n  const hours = pad(date.getHours());\n  const minutes = pad(date.getMinutes());\n  const seconds = pad(date.getSeconds());\n  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}-03:00`;\n}\n\nwhile (opciones.length < 5 && intentoDia <= 10) {\n  const fecha = new Date();\n  fecha.setDate(fecha.getDate() + intentoDia);\n  \n  const diaSemana = fecha.getDay();\n  \n  if (diaSemana !== 0 && diaSemana !== 6) {\n    const hora = Math.floor(Math.random() * (17 - 9 + 1)) + 9;\n    \n    const fechaInicio = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate(), hora, 0, 0);\n    const fechaFin = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate(), hora + 1, 0, 0);\n\n    const fechaTexto = fechaInicio.toLocaleString('es-AR', {\n      timeZone: 'America/Argentina/Buenos_Aires',\n      weekday: 'long',\n      day: 'numeric',\n      month: 'long',\n      year: 'numeric',\n      hour: '2-digit',\n      minute: '2-digit'\n    });\n\n    opciones.push({\n      numero_opcion: opciones.length + 1,\n      fecha_presentada: fechaTexto,\n      start_time: toLocalISO(fechaInicio),\n      end_time: toLocalISO(fechaFin)\n    });\n  }\n  intentoDia++;\n}\n\nreturn JSON.stringify(opciones);"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        672,
+        448
+      ],
+      "id": "7c882194-0f45-47e0-a43f-8a757ea8b18b",
+      "name": "Code Tool"
+    },
+    {
+      "parameters": {
+        "sendTo": "nicolumbreras@gmail.com",
+        "subject": "=Log de Observabilidad - Vendedor de autos",
+        "message": "=Hola equipo de supervisión,  Se ha registrado una nueva interacción en el bot de ventas de autos.  \n\nMensaje original del usuario: \n{{ $('Telegram Trigger').item.json.message.text }}  \n\nRespuesta generada por la IA: \n{{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        848,
+        16
+      ],
+      "id": "c139c85c-594d-492d-8dc4-68e2fedb25af",
+      "name": "Send a message",
+      "webhookId": "29209968-9860-4685-bf3e-f929782968a8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Aitb6800rGaA0zDZ",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "0184a0d8-ee4b-47b9-981a-bb594914453f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9d56dafec9cde7607067980fdd28d6e659f0f74667a74870c335326c02886524"
+  },
+  "nodeGroups": [],
+  "id": "Q6CHvpQYBRJDCEzt",
+  "tags": []
+}
